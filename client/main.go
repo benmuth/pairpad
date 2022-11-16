@@ -54,12 +54,12 @@ func main() {
 	var s *bufio.Scanner
 
 	// Parse flags.
-	server := flag.String("server", "localhost:9000", "Server network address")
+	server := flag.String("server", "rowix-server.fly.dev", "Server network address")
 	path := flag.String("path", "/", "Server path")
 	flag.Parse()
 
 	// Construct WebSocket URL.
-	u := url.URL{Scheme: "ws", Host: *server, Path: *path}
+	u := url.URL{Scheme: "wss", Host: *server, Path: *path}
 
 	// Read username.
 	fmt.Print("Enter your name: ")
@@ -71,8 +71,9 @@ func main() {
 	doc = crdt.New()
 
 	// Get WebSocket connection.
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	conn, r, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
+		fmt.Printf("http response: %+v\n", r)
 		fmt.Printf("Connection error, exiting: %s", err)
 		os.Exit(0)
 	}
@@ -220,10 +221,12 @@ func getMsgChan(conn *websocket.Conn) chan message {
 			// Read message.
 			err := conn.ReadJSON(&msg)
 			if err != nil {
-				fmt.Printf("Server closed. Exiting...")
-				fmt.Printf("connection error!: %s\n", err)
-				// TODO: error handling?
-				os.Exit(0)
+				// fmt.Printf("Server closed. Exiting...")
+				// error handling copied from https://github.com/gorilla/websocket/blob/b65e62901fc1c0d968042419e74789f6af455eb9/examples/chat/client.go#L65-L71
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Printf("websocket error: %v", err)
+				}
+				break
 			}
 
 			logger.Printf("message received: %+v\n", msg)

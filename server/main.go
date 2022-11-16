@@ -37,7 +37,7 @@ var done = make(chan bool)
 
 func main() {
 	// Parse flags.
-	addr := flag.String("addr", ":9000", "Server's network address")
+	addr := flag.String("addr", ":8080", "Server's network address")
 	flag.Parse()
 
 	mux := http.NewServeMux()
